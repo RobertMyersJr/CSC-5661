@@ -1,0 +1,15 @@
+kagglehub
+soundfile
+numpy
+nbdime
+scipy
+matplotlib
+pandas
+scikit-learn
+seaborn
+patsy
+pyarrow
+statsmodels
+jupyter
+graphviz
+tensorflow
