@@ -1,21 +1,3 @@
-"""Racetrack environment (Sutton & Barto, Exercise 5.12) with a gymnasium-like API.
-
-Track layout (y measured upward from the starting line, x to the right):
-
-    y=29 +----------+---------------+
-         |          |               | <- finish line (x = 24, y = 20..29)
-    y=20 |          +---------------+
-         |  vertical|  horizontal section: 15 wide x 10 tall
-         |  section |
-         |  10 wide |
-         |  30 tall |
-    y=0  +----------+  <- starting line (y = 0, x = 0..9)
-        x=0       x=9 x=10         x=24
-
-The horizontal section attaches to the right side of the top 10 rows of the
-vertical section, so the right turn happens in the top 10 rows.
-"""
-
 import numpy as np
 import gymnasium as gym
 from gymnasium import spaces
