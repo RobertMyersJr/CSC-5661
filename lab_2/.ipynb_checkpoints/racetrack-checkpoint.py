@@ -11,7 +11,7 @@ class RacetrackEnv(gym.Env):
     HORIZ_WIDTH = 15
     HORIZ_HEIGHT = 10
 
-    def __init__(self, wind_speed = 0, wind_chance = 0.30):
+    def __init__(self, wind_speed = 0, wind_chance = 0.20):
         self.wind_speed = wind_speed
         self.wind_chance = wind_chance
 
