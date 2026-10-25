@@ -11,7 +11,8 @@ class RacetrackEnv(gym.Env):
     HORIZ_WIDTH = 15
     HORIZ_HEIGHT = 10
 
-    def __init__(self, wind_speed=0, wind_chance=0.30, soft_reset=False):
+    def __init__(self, use_provided_reward = True, wind_speed=0, wind_chance=0.30, soft_reset=False):
+        self.use_provided_reward = use_provided_reward
         self.wind_speed = wind_speed
         self.wind_chance = wind_chance
 
@@ -44,9 +45,10 @@ class RacetrackEnv(gym.Env):
         self.terminated = False
         self.steps = 0
         self.render_count = 0
+        self.wind_approaching = False
 
     def _get_obs(self):
-        return np.array([*self.pos, *self.vel], dtype=np.int64)
+        return np.array([*self.pos, *self.vel, self.wind_approaching], dtype=np.int64)
 
     def _on_track(self, x, y):
         """
@@ -77,6 +79,8 @@ class RacetrackEnv(gym.Env):
         self.pos = self.start_cells[idx]
         self.vel = (0, 0)
         self.terminated = False
+        self.turncated = False
+        self.wind_approaching = False
         self.info = {"finished": False, "crashed": False}
         return self._get_obs(), {}
 
@@ -86,11 +90,22 @@ class RacetrackEnv(gym.Env):
         return self._get_obs(), {}
         
     def provided_reward(self):
-        return 1/max(1,((self.pos[0] - (self.VERT_WIDTH - 1))**2
-                          + (self.HORIZ_WIDTH/2.0 - self.pos[1])**2
+        return 1/max(1,((self.pos[0] - (self.VERT_WIDTH - 1))**2 + (self.HORIZ_WIDTH/2.0 - self.pos[1])**2))
+        
     def my_reward(self):
-        return 1/max(1,((self.pos[0] - (self.VERT_WIDTH - 1))**2
-                          + (self.HORIZ_WIDTH/2.0 - self.pos[1])**2))
+        if self.info['finished']:
+            return 100.0
+        
+        if self.info['crashed']:
+            return -50.0
+            
+        reward = -1.0
+
+        # encouage it to hug the right wall more
+        progress_bonus = 0.1 * self.pos[0]  
+        
+        return reward + progress_bonus
+
     def step(self, action):
         if self.soft_reset_env and self.info["crashed"]:
             self.soft_reset()
@@ -113,13 +128,19 @@ class RacetrackEnv(gym.Env):
 
         self.terminated = False
         self.info = {"finished": False, "crashed": False }
-        
+        if self.wind_approaching:
+            vx += self.wind_speed
+            self.wind_approaching = False
+
         # A gust of wind can push the car sideways
         if self.np_random.random() < self.wind_chance:
-            vx += self.wind_speed
+            self.wind_approaching = True
 
         # TODO figure out the reward system when we incorporate an agent
-        reward = self.provided_reward()
+        if self.use_provided_reward:
+            reward = self.provided_reward()
+        else:
+            reward = self.my_reward()
         path = self._path(*self.pos, vx, vy)
         for x, y in path:
             if self._on_finish(x, y):
@@ -129,7 +150,7 @@ class RacetrackEnv(gym.Env):
                 break
             if not self._on_track(x, y):
                 # leave the car at its last on-track cell
-                self.terminated = True
+                self.terminated = not self.soft_reset_env
                 self.info["crashed"] = True
                 break
             self.pos = (x, y)
